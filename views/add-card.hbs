@@ -1,0 +1,127 @@
+<h1>{{title}}</h1>
+<p>Create Provider Account</p>
+<div>
+    <!-- For payment collection -->
+    <script type="text/javascript" src="https://js.stripe.com/v2/"></script>
+    <script type="text/javascript" src="/javascripts/jquery.payment.min.js"></script>
+
+<h2>{{token}} was stored.</h2>
+
+<form novalidate autocomplete="on" method="POST" id="payment-form" action="/client-save-account-token">
+    <span class="payment-errors"></span>
+    <label for="name" class="col-sm-2 control-label">Account Id</label>
+        <div class="col-sm-10">
+            <input type="text" class="form-control" id="accountId" name="accountId" placeholder="AccountId" value="acct_194tFUJjUjxOb2VC">
+        </div>
+
+        <div class="form-group">
+            <label for="number" class="control-label">Card number formatting <small class="text-muted">[<span class="brand"></span>]</small></label>
+            <input id="number" type="tel" class="input-lg form-control number" autocomplete="number" placeholder="•••• •••• •••• ••••" required>
+        </div>
+
+        <div class="form-group">
+            <label for="exp" class="control-label">Card expiry formatting</label>
+            <input id="exp" type="tel" class="input-lg form-control exp" autocomplete="exp" placeholder="•• / ••" required>
+        </div>
+
+        <div class="form-group">
+            <label for="cvc" class="control-label">Card CVC formatting</label>
+            <input id="cvc" type="tel" class="input-lg form-control cvc" autocomplete="off" placeholder="•••" required>
+        </div>
+
+        <div class="form-group">
+            <label for="currency" class="control-label">Currency</label>
+            <select data-stripe="currency" id="currency">
+              <option value="">(None)</option>
+              <option value="usd">US Dollar</option>
+              <option value="eur">Euro</option>
+            </select>
+        </div>
+
+      <input type="hidden" id="token" />
+      <button type="submit" class="btn btn-lg btn-primary">Submit</button>
+
+</form>
+<p id="payment-result"></p>
+</div>
+
+<script type="text/javascript">
+    Stripe.setPublishableKey('{{publicKey}}');
+
+      var $form = $('#payment-form');
+      var $result = $('#payment-result');
+      $(function() {
+        $form.submit(function(event) {
+          $form.find('.errors').text('');
+          $form.find('.submit').prop('disabled', true);
+          console.log(1);
+          if (Stripe.card.validateCardNumber($('#number').val())
+                && Stripe.card.validateExpiry($('#exp').val())
+                && Stripe.card.validateCVC($('#cvc').val())) {
+
+                console.log(2);
+
+                var card = {
+                    number: $('#number').val(),
+                    exp_month: 12,
+                    exp_year: 2017,
+                    cvc: $('#cvc').val(),
+                    currency: $('#currency').val()
+                };
+                console.log(JSON.stringify(card));
+                Stripe.card.createToken(card, stripeResponseHandler);
+          } else {
+              console.log(3);
+            $form.find('.errors').text('Please enter valid test credit card information.');
+            $form.find('.submit').prop('disabled', false);
+          }
+          console.log(4);
+          return false;
+        });
+      });
+      function stripeResponseHandler(status, response) {
+          // Grab the form:
+         var $form = $('#payment-form');
+
+         if (response.error) { // Problem!
+
+           // Show the errors on the form:
+           $form.find('.errors').text(response.error.message);
+           $form.find('.submit').prop('disabled', false); // Re-enable submission
+
+         } else { // Token was created!
+
+           // Get the token ID:
+           var token = response.id;
+
+           // Insert the token ID into the form so it gets submitted to the server:
+           $form.append($('<input type="hidden" name="token">').val(token));
+
+           // Submit the form:
+           $form.get(0).submit();
+         }
+      };
+
+</script>
+<!-- method="post" action="/client-add-account" -->
+<script>
+jQuery(function($) {
+  $('.number').payment('formatCardNumber');
+  $('.exp').payment('formatCardExpiry');
+  $('.cvc').payment('formatCardCVC');
+  $.fn.toggleInputError = function(erred) {
+    this.parent('.form-group').toggleClass('has-error', erred);
+    return this;
+  };
+  $('form').submit(function(e) {
+    e.preventDefault();
+    var cardType = $.payment.cardType($('.number').val());
+    $('.number').toggleInputError(!$.payment.validateCardNumber($('.number').val()));
+    $('.exp').toggleInputError(!$.payment.validateCardExpiry($('.exp').payment('cardExpiryVal')));
+    $('.cvc').toggleInputError(!$.payment.validateCardCVC($('.cvc').val(), cardType));
+    $('.brand').text(cardType);
+    $('.validation').removeClass('text-danger text-success');
+    $('.validation').addClass($('.has-error').length ? 'text-danger' : 'text-success');
+  });
+});
+</script>
