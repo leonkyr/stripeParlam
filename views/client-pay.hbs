@@ -1,0 +1,56 @@
+<h1>{{title}}</h1>
+<p>Client Pay</p>
+<div>
+    <!-- <form action="/your-server-side-code" method="POST">
+      <script
+        src="https://checkout.stripe.com/checkout.js" class="stripe-button"
+        data-key="{{publicKey}}"
+        data-amount="{{amount}}"
+        data-name="Parlam"
+        data-description="{{description}}"
+        data-image="https://stripe.com/img/documentation/checkout/marketplace.png"
+        data-locale="auto"
+        data-zip-code="true"
+        data-currency="{{currency}}">
+      </script>
+    </form> -->
+
+    <script src="https://checkout.stripe.com/checkout.js"></script>
+
+    {{#if thankyou}}
+        <h1>Thank you for payment</h1>
+    {{/if}}
+
+    <button id="customButton">Purchase</button>
+
+    <script>
+    var handler = StripeCheckout.configure({
+      key: '{{publicKey}}',
+      image: 'https://stripe.com/img/documentation/checkout/marketplace.png',
+      locale: 'auto',
+      token: function(token) {
+          $.post( "/client-pay-process", {
+              token: token.id
+          })
+          .then();
+      }
+    });
+
+    document.getElementById('customButton').addEventListener('click', function(e) {
+      // Open Checkout with further options:
+      handler.open({
+        name: 'Parlam',
+        description: '{{description}}',
+        zipCode: true,
+        currency: '{{currency}}',
+        amount: {{amount}}
+      });
+      e.preventDefault();
+    });
+
+    // Close Checkout on page navigation:
+    window.addEventListener('popstate', function() {
+      handler.close();
+    });
+    </script>
+</div>

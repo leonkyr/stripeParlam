@@ -1,9 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const accountCreator = require('../app/account-creator');
+const customerCreator = require('../app/customer-creator');
+const customerCharger = require('../app/customer-charger');
 const accountUpdater = require('../app/account-updater');
 const paymentAccountRetriever = require('../app/payment-account-retriever');
 const paymentAccountCreator = require('../app/payment-account-creator');
+const customerToAccountTransfer = require('../app/customer-to-account-transfer');
 const keys = require('../keys');
 
 /* GET home page. */
@@ -105,6 +108,75 @@ router.get('/add-card', function(req, res, next) {
       title: 'Add card',
       publicKey: keys.publicKey
   });
+});
+
+router.get('/add-bank-account-provider', function(req, res, next) {
+    res.render('add-bank-account-provider', {
+        title: 'Add bank account (Provider)',
+        publicKey: keys.publicKey
+    });
+});
+
+router.get('/client-pay', function(req, res, next) {
+  res.render('client-pay', {
+      title: 'Client Pay',
+      publicKey: keys.publicKey,
+      currency: 'eur',
+      amount: 10000,
+      description: 'Translate War and Peace'
+  });
+});
+
+router.post('/client-pay-process', (req, res, next) => {
+    const model = {
+        token: req.body.token,
+        email: 'xavi@parlam.com',
+        amount: 10000,
+        currency: 'eur'
+    };
+
+    customerCreator.create(model)
+        .then(result => {
+            model.customer = result.id;
+            return customerCharger.charge(model);
+        })
+        .then(result => {
+            res.render('client-pay', {
+                title: 'Client Pay',
+                publicKey: keys.publicKey,
+                currency: 'eur',
+                amount: model.amount,
+                description: 'Translate War and Peace',
+                thankyou: true
+            });
+        })
+        .catch(error => {
+            console.log(`Error: ${error}`);
+            res.render('error', { message: error, error: error });
+        });
+});
+
+router.get('/transfer', function(req, res, next) {
+  res.render('customer-to-account-transfer', { title: 'Transfer' });
+});
+
+router.post('/transfer-to-account', function(req, res, next) {
+    const model = {
+        destination: req.body.accountId,
+        amount: req.body.amount,
+        currency: req.body.currency,
+        description: req.body.description
+    };
+
+    customerToAccountTransfer.transfer(model)
+        .then(result => {
+            console.log(`result: ${JSON.stringify(result, null, 2)}`);
+            res.render('client-list-accounts', result);
+        })
+        .catch(error => {
+            console.log(`Error: ${error}`);
+            res.render('error', { message: error, error: error });
+        })
 });
 
 router.get('/client-manage', function(req, res, next) {
